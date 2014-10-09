@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<title>Fort Lauderdale Bike Racks - Code For Fort Lauderdale</title>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>aboutPlace Vibe App</title>
+    <style>
+        #map
+        {
+            width: 100% !important;
+            height:100% !important;
+            display: block;
+            min-height: 800px;
+        }
+
+    </style>
+</head>
+
+
+<body ng-app="mainApp" ng-controller="mainCtrl">
+<div id="map"></div>
+</body>
+
+<!--Angularjs 1.2.25-->
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular.min.js"></script>
+<!--Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+
+<script>
+
+    //create the mainApp
+    var app = angular.module('mainApp',[]);
+
+
+    //Get the rack locations from the file.
+    app.factory('rackService',function($http,$q){
+        return{
+            getMarkers: function (lat, lng) {
+                var defered = $q.defer();
+                $http.get('racks.geojson')
+                        .success(function(response){
+                                //console.log(response)
+                                coords = [];
+                                //coordinates: response.features[0].geometry.coordinates
+                                for(i = 0; i < response.features.length; i++){
+                                    coords.push(response.features[i])
+                                    //console.log(response.features[i])
+                                }
+                                //console.log(coords);
+                                defered.resolve({coords:coords});
+
+
+                        })
+                return defered.promise
+
+            }
+
+        }
+
+    });
+
+    var polyShape;
+    var polyArea;
+    //create the controller
+    app.controller('mainCtrl',['$scope','rackService',function($scope,rackService){
+
+
+        var bounds;
+        var mapOptions ={
+            zoom:10,
+            center: new google.maps.LatLng(26.175851037166442, -80.44741577148437),
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        }
+
+
+        map = new google.maps.Map(document.getElementById('map'),mapOptions);
+
+
+
+        var blueCoords = [
+            new google.maps.LatLng(26.175851037166442, -80.44741577148437),
+            new google.maps.LatLng(26.145954271223538, -80.44266577148431),
+            new google.maps.LatLng(26.127147073679858, -80.36444470214838),
+            new google.maps.LatLng(26.192360683643223,  -80.2985095825195),
+            new google.maps.LatLng(26.229207840165646, -80.29643249511719)
+        ];
+
+
+
+        // Construct a draggable blue triangle with geodesic set to false.
+        polyShape = new google.maps.Polygon({
+            map: map,
+            paths: blueCoords,
+            strokeColor: '#0000FF',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '#0000FF',
+            fillOpacity: 0.35,
+            draggable: true,
+            geodesic: false,
+            editable:true
+        });
+        polyShape.setMap(map);
+
+        //Listener for click event which triggers area calculation
+        google.maps.event.addListener(polyShape, 'click', function() {
+            google.maps.event.addListener(polyShape.getPath(), 'set_at', function() {
+                //get the area of the polygon
+                polyArea = google.maps.geometry.spherical.computeArea(polyShape.getPath());
+                console.log(polyArea);
+            });
+
+
+            setSelection(polyShape);
+        });
+
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    ])
+</script>
+
+</html>
